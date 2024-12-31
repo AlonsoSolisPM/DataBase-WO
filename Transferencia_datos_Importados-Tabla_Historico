@@ -1,0 +1,57 @@
+Sub TransferirDatosAHistoricoPM()
+    Dim wsImportados As Worksheet, wsHistorico As Worksheet
+    Dim lastRowImportados As Long, lastRowHistorico As Long
+    Dim mapeoColumnas As Object
+    Dim colHistorico As Long
+    Dim colImportados As Variant ' Declarado como Variant para iterar en el diccionario
+    Dim i As Long
+    
+    ' Establecer las hojas
+    Set wsImportados = ThisWorkbook.Sheets("Importados")
+    Set wsHistorico = ThisWorkbook.Sheets("Todas las tiendas")
+    
+    ' Encontrar la última fila de ambas hojas
+    lastRowImportados = wsImportados.Cells(wsImportados.Rows.Count, "A").End(xlUp).Row
+    lastRowHistorico = wsHistorico.Cells(wsHistorico.Rows.Count, "A").End(xlUp).Row + 1 ' Primera fila disponible en la tabla dinámica
+    
+    ' Crear un diccionario para mapear columnas
+    Set mapeoColumnas = CreateObject("Scripting.Dictionary")
+    mapeoColumnas.Add "Número", "Ticket"
+    mapeoColumnas.Add "Título", "Descripcion"
+    mapeoColumnas.Add "Estado", "Estado"
+    mapeoColumnas.Add "Remitente", "Remitente"
+    mapeoColumnas.Add "Propietario", "Técnico"
+    mapeoColumnas.Add "Creado", "Creado"
+    mapeoColumnas.Add "Vencimiento", "Vencimiento"
+    mapeoColumnas.Add "Modificado", "Modificado"
+    
+    ' Transferir datos
+    For i = 2 To lastRowImportados ' Recorrer filas de Importados (sin encabezado)
+        For Each colImportados In mapeoColumnas.Keys
+            ' Buscar la columna correspondiente en ambas hojas
+            Dim colImport As Long
+            Dim colHist As Long
+            colImport = BuscarColumna(wsImportados, CStr(colImportados)) ' Asegurar que sea String
+            colHist = BuscarColumna(wsHistorico, CStr(mapeoColumnas(colImportados))) ' Asegurar que sea String
+            
+            ' Copiar el valor si las columnas existen
+            If colImport > 0 And colHist > 0 Then
+                wsHistorico.Cells(lastRowHistorico, colHist).Value = wsImportados.Cells(i, colImport).Value
+            End If
+        Next
+        lastRowHistorico = lastRowHistorico + 1 ' Moverse a la siguiente fila disponible en la tabla dinámica
+    Next i
+    
+    MsgBox "Transferencia completada exitosamente.", vbInformation
+End Sub
+
+Function BuscarColumna(ws As Worksheet, encabezado As String) As Long
+    Dim rng As Range
+    Set rng = ws.Rows(1).Find(What:=encabezado, LookAt:=xlWhole)
+    If Not rng Is Nothing Then
+        BuscarColumna = rng.Column
+    Else
+        BuscarColumna = 0
+    End If
+End Function
+
